@@ -5,10 +5,11 @@ import { Component } from '../../types';
 interface MapComponentProps {
   component: Component;
   isSelected: boolean;
-  onSelect: () => void;
+  onSelect: (e: any) => void;
   onDragEnd: (e: any) => void;
   canvasWidth: number;
   canvasHeight: number;
+  isConnectionSource?: boolean;
 }
 
 const CANVAS_PADDING = 80;
@@ -20,6 +21,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
   onDragEnd,
   canvasWidth,
   canvasHeight,
+  isConnectionSource = false,
 }) => {
   const mapWidth = canvasWidth - CANVAS_PADDING * 2;
   const mapHeight = canvasHeight - CANVAS_PADDING * 2;
@@ -43,8 +45,8 @@ export const MapComponent: React.FC<MapComponentProps> = ({
       <Circle
         radius={radius}
         fill={color}
-        stroke={isSelected ? '#000' : '#fff'}
-        strokeWidth={isSelected ? 3 : 2}
+        stroke={isConnectionSource ? '#10b981' : (isSelected ? '#000' : '#fff')}
+        strokeWidth={isConnectionSource ? 4 : (isSelected ? 3 : 2)}
         shadowColor="black"
         shadowBlur={5}
         shadowOpacity={0.3}
