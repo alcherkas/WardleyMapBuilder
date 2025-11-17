@@ -1,0 +1,13 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.canvas-container {
+  flex: 1;
+  overflow: hidden;
+  background: #f5f5f5;
+}
