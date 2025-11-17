@@ -6,6 +6,12 @@
   overflow: hidden;
 }
 
+.main-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
 .canvas-container {
   flex: 1;
   overflow: hidden;

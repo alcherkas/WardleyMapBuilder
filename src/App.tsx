@@ -1,24 +1,28 @@
 import React, { useRef, useState, useEffect } from 'react';
 import WardleyCanvas from './components/Canvas/WardleyCanvas';
 import { Toolbar } from './components/Toolbar/Toolbar';
+import { ComponentEditor } from './components/Editor/ComponentEditor';
 import { useMapStore } from './stores/mapStore';
 import { exportToJSON, importFromJSON } from './utils/export';
+import { downloadMapScript, importMapScript } from './utils/mapscript';
 import './App.css';
 
 function App() {
+  const EDITOR_WIDTH = 300;
   const [dimensions, setDimensions] = useState({
-    width: window.innerWidth,
+    width: window.innerWidth - EDITOR_WIDTH,
     height: window.innerHeight - 60, // Subtract toolbar height
   });
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const jsonFileInputRef = useRef<HTMLInputElement>(null);
+  const mapScriptFileInputRef = useRef<HTMLInputElement>(null);
   const exportMap = useMapStore((state) => state.exportMap);
   const loadMap = useMapStore((state) => state.loadMap);
 
   useEffect(() => {
     const handleResize = () => {
       setDimensions({
-        width: window.innerWidth,
+        width: window.innerWidth - EDITOR_WIDTH,
         height: window.innerHeight - 60,
       });
     };
@@ -50,10 +54,19 @@ function App() {
   };
 
   const handleLoadJSON = () => {
-    fileInputRef.current?.click();
+    jsonFileInputRef.current?.click();
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSaveMapScript = () => {
+    const mapData = exportMap();
+    downloadMapScript(mapData);
+  };
+
+  const handleLoadMapScript = () => {
+    mapScriptFileInputRef.current?.click();
+  };
+
+  const handleJSONFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       try {
@@ -66,8 +79,36 @@ function App() {
       }
     }
     // Reset file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    if (jsonFileInputRef.current) {
+      jsonFileInputRef.current.value = '';
+    }
+  };
+
+  const handleMapScriptFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        const mapData = await importMapScript(file);
+        loadMap({
+          map: {
+            id: crypto.randomUUID(),
+            title: mapData.title,
+            purpose: mapData.purpose,
+            scope: mapData.scope,
+          },
+          components: mapData.components,
+          connections: mapData.connections,
+          annotations: [],
+        });
+        alert('MapScript loaded successfully!');
+      } catch (error) {
+        alert('Failed to load MapScript. Please check the file format.');
+        console.error(error);
+      }
+    }
+    // Reset file input
+    if (mapScriptFileInputRef.current) {
+      mapScriptFileInputRef.current.value = '';
     }
   };
 
@@ -77,19 +118,31 @@ function App() {
         onExportPNG={handleExportPNG}
         onSaveJSON={handleSaveJSON}
         onLoadJSON={handleLoadJSON}
+        onSaveMapScript={handleSaveMapScript}
+        onLoadMapScript={handleLoadMapScript}
       />
-      <div className="canvas-container">
-        <WardleyCanvas
-          width={dimensions.width}
-          height={dimensions.height}
-        />
+      <div className="main-content">
+        <div className="canvas-container">
+          <WardleyCanvas
+            width={dimensions.width}
+            height={dimensions.height}
+          />
+        </div>
+        <ComponentEditor />
       </div>
       <input
-        ref={fileInputRef}
+        ref={jsonFileInputRef}
         type="file"
         accept=".json"
         style={{ display: 'none' }}
-        onChange={handleFileChange}
+        onChange={handleJSONFileChange}
+      />
+      <input
+        ref={mapScriptFileInputRef}
+        type="file"
+        accept=".owm,.txt"
+        style={{ display: 'none' }}
+        onChange={handleMapScriptFileChange}
       />
     </div>
   );

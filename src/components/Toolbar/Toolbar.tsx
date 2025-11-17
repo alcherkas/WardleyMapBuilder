@@ -6,9 +6,17 @@ interface ToolbarProps {
   onExportPNG: () => void;
   onSaveJSON: () => void;
   onLoadJSON: () => void;
+  onSaveMapScript: () => void;
+  onLoadMapScript: () => void;
 }
 
-export const Toolbar: React.FC<ToolbarProps> = ({ onExportPNG, onSaveJSON, onLoadJSON }) => {
+export const Toolbar: React.FC<ToolbarProps> = ({
+  onExportPNG,
+  onSaveJSON,
+  onLoadJSON,
+  onSaveMapScript,
+  onLoadMapScript
+}) => {
   const { ui, setTool, toggleGrid, setZoom, resetMap, map, setTitle } = useMapStore();
 
   return (
@@ -39,6 +47,13 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onExportPNG, onSaveJSON, onLoa
           title="Add Component (click on canvas)"
         >
           ➕ Add Component
+        </button>
+        <button
+          className={`toolbar-button ${ui.tool === 'connection' ? 'active' : ''}`}
+          onClick={() => setTool('connection')}
+          title="Draw Connection (click source then target)"
+        >
+          ↔️ Connect
         </button>
       </div>
 
@@ -81,21 +96,35 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onExportPNG, onSaveJSON, onLoa
           onClick={onSaveJSON}
           title="Save map as JSON"
         >
-          💾 Save JSON
+          💾 JSON
         </button>
         <button
           className="toolbar-button"
           onClick={onLoadJSON}
           title="Load map from JSON"
         >
-          📁 Load JSON
+          📁 JSON
+        </button>
+        <button
+          className="toolbar-button"
+          onClick={onSaveMapScript}
+          title="Save as MapScript (.owm)"
+        >
+          💾 OWM
+        </button>
+        <button
+          className="toolbar-button"
+          onClick={onLoadMapScript}
+          title="Load MapScript (.owm)"
+        >
+          📁 OWM
         </button>
         <button
           className="toolbar-button"
           onClick={onExportPNG}
           title="Export map as PNG"
         >
-          📸 Export PNG
+          📸 PNG
         </button>
         <button
           className="toolbar-button danger"

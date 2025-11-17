@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Stage, Layer } from 'react-konva';
 import { Grid } from './Grid';
 import { MapComponent } from './MapComponent';
@@ -19,12 +19,63 @@ export const WardleyCanvas: React.FC<WardleyCanvasProps> = ({ width, height }) =
     connections,
     ui,
     addComponent,
+    addConnection,
     updateComponent,
     selectComponent,
+    selectComponents,
     deselectAll,
     setZoom,
     setPan,
+    startConnectionDrawing,
+    cancelConnectionDrawing,
+    copySelectedComponents,
+    pasteComponents,
+    deleteSelectedComponents,
+    undo,
+    redo,
   } = useMapStore();
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Undo (Ctrl/Cmd+Z)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      }
+      // Redo (Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y)
+      else if ((e.ctrlKey || e.metaKey) && (e.shiftKey && e.key === 'z' || e.key === 'y')) {
+        e.preventDefault();
+        redo();
+      }
+      // Copy (Ctrl/Cmd+C)
+      else if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+        e.preventDefault();
+        copySelectedComponents();
+      }
+      // Paste (Ctrl/Cmd+V)
+      else if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+        e.preventDefault();
+        pasteComponents();
+      }
+      // Delete (Delete or Backspace)
+      else if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        deleteSelectedComponents();
+      }
+      // Escape - deselect all
+      else if (e.key === 'Escape') {
+        e.preventDefault();
+        deselectAll();
+        if (ui.connectionDrawing.isDrawing) {
+          cancelConnectionDrawing();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [copySelectedComponents, pasteComponents, deleteSelectedComponents, deselectAll, cancelConnectionDrawing, undo, redo, ui.connectionDrawing.isDrawing]);
 
   const handleStageClick = (e: any) => {
     // Click on empty area
@@ -52,8 +103,43 @@ export const WardleyCanvas: React.FC<WardleyCanvasProps> = ({ width, height }) =
         };
 
         addComponent(newComponent);
+      } else if (ui.connectionDrawing.isDrawing) {
+        // Cancel connection drawing on empty area click
+        cancelConnectionDrawing();
       } else {
         deselectAll();
+      }
+    }
+  };
+
+  const handleComponentClick = (componentId: string, shiftKey: boolean = false) => {
+    if (ui.tool === 'connection') {
+      if (!ui.connectionDrawing.isDrawing) {
+        // Start drawing connection from this component
+        startConnectionDrawing(componentId);
+      } else if (ui.connectionDrawing.sourceId !== componentId) {
+        // Complete connection to this component
+        const newConnection = {
+          id: crypto.randomUUID(),
+          source: ui.connectionDrawing.sourceId!,
+          target: componentId,
+          type: 'dependency' as const,
+        };
+        addConnection(newConnection);
+        cancelConnectionDrawing();
+      }
+    } else if (ui.tool === 'select') {
+      if (shiftKey) {
+        // Multi-select with Shift+Click
+        if (ui.selectedComponents.includes(componentId)) {
+          // Deselect if already selected
+          selectComponents(ui.selectedComponents.filter(id => id !== componentId));
+        } else {
+          // Add to selection
+          selectComponents([...ui.selectedComponents, componentId]);
+        }
+      } else {
+        selectComponent(componentId);
       }
     }
   };
@@ -132,10 +218,11 @@ export const WardleyCanvas: React.FC<WardleyCanvasProps> = ({ width, height }) =
               key={component.id}
               component={component}
               isSelected={ui.selectedComponents.includes(component.id)}
-              onSelect={() => selectComponent(component.id)}
+              onSelect={(e: any) => handleComponentClick(component.id, e?.evt?.shiftKey)}
               onDragEnd={handleComponentDragEnd(component.id)}
               canvasWidth={width}
               canvasHeight={height}
+              isConnectionSource={ui.connectionDrawing.sourceId === component.id}
             />
           ))}
         </Layer>
